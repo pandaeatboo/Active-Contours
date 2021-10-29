@@ -1,9 +1,9 @@
 # Script to hold all the helper functions that will be used for the 2D Snake
 
 import numpy as np
-import scipy
-import pandas as pd
+from scipy.interpolate import interp2d
 
+# compute the A matrix 
 def computeA(n,alpha,beta):
     d1 = -2*np.ones(n)
     d2 = np.ones(n-1)
@@ -16,6 +16,7 @@ def computeA(n,alpha,beta):
     return -alpha*A2 + beta*A4
 
 
+# calculate euclidean distance between points
 def distPoints(V):
     
     V = np.append(V,V[0,:][np.newaxis],axis=0)
@@ -25,5 +26,21 @@ def distPoints(V):
     
     return distance.T
 
+# interpolate the snake V, on the vector field G
+# have to interpret matlab's interp2 using scipy interp2d
+    
 def interpSnake2(G,V):
-    pass
+    
+    x_range = np.arange(1,G.shape[1]+1)
+    y_range = np.arange(1,G.shape[0]+1)
+    
+    
+    vert = interp2d(x_range, y_range, G[:,:,0])
+    vertical = vert(V[:,0],V[:,1])
+    
+    horiz = interp2d(x_range, y_range,G[:,:,1])
+    horizontal = horiz(V[:,0], V[:,1])
+    print(vertical.shape)
+    print(horizontal.shape)
+    
+    return 
