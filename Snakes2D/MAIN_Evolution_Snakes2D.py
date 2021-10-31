@@ -3,5 +3,5 @@ import math
 import scipy
 import matplotlib.pyplot as plt
 
-from functions import *
+from Evolution_Snakes2D import SnakesEvolution
 
