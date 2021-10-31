@@ -45,3 +45,27 @@ def interpSnake2(G,V):
     
     return 
 
+def balloonForce():
+    pass
+
+def displayImageAndSnake():
+    pass
+
+def gradientCentered():
+    pass
+
+def polygonParity():
+    pass
+
+def selectPoints():
+    pass
+
+def smoothForces():
+    pass
+
+def splinesInterpolation2D():
+    pass
+
+def subdivision():
+    pass
+
