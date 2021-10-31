@@ -3,5 +3,5 @@ import math
 import scipy
 import matplotlib.pyplot as plt
 
-from functions.functions import *
+from functions import *
 
