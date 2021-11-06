@@ -5,3 +5,10 @@ import matplotlib.pyplot as plt
 
 from Evolution_Snakes2D import SnakesEvolution
 
+
+def run():
+    
+
+if __name__ == "__main__":
+    run()
+    
