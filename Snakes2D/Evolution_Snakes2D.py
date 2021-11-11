@@ -48,7 +48,7 @@ class SnakesEvolution():
         if verbose:
             plt.figure()
         
-        # there is no GNU OCTAVE compatability, so we skip the conditional
+        # there is no GNU OCTAVE compatability for Python, so we skip the conditional
         I = cv2.GaussianBlur(self.I_init, ksize=(0,0), sigmaX=self.Sigma, borderType=cv2.BORDER_REPLICATE ) 
         V = V_init
         N = V.shape[0]
@@ -94,19 +94,33 @@ class SnakesEvolution():
                     V1 = splinesInterpolation2D(V1, math.floor(V1.shape[0]*self.RefinementFactor))
                     N2 = V1.shape[0]
                     # computation of the regularization matrix
-                    
-                    
-            
-            
+                    A = computeA(N2,self.Alpha,self.Beta)
+                    A = self.Gamma * A + eye(N2)
+                    igpi = inv(A)
+                    # computation of the potential
+                    nabla_P = gradientCentered(Potential)
+                    condi = np.ones((N2,1)) == 1
+
+
             # computation of the stopping criteria
             n = n + 1
-            
-            
-            
-            
-            elapsedtime = time.time() - t
-            pass
+            if (V.shape[0] == V1.shape[0]):
+                eps = np.sum((V-V1)**2)
+            else:
+                eps = 1e5
+                
+            V = V1
         
+        elapsedtime = time.time() - t
+        if (n == self.MaxIteration+1): 
+            print(f"Maximum Iterations Number ({self.maxIterations}) reached. Time(s): {elapsedtime}s. Algorithm may have not converged.")
+        elif (elapsedtime < self.TimeOut + 0.5):
+            print(f"Stopping Criterion reached at iteration {n}. Time(s): {elapsedtime}")
+        else:
+            print(f"TIMEOUT ({elapsedtime})s. Iteration: {n}. Algorithm may have not converged.")
+
+        return V 
+       
         
         
             
