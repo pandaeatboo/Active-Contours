@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from scipy.sparse import eye
 import cv2
 from functions import *
+import matlab.engine
+eng = matlab.engine.start_matlab()
 
 # Instead of the I_init and V_init used in the MATLAB version. Here we just ask the 
 # user to input the original image, as well as how many subdivisions they want.
@@ -55,8 +57,7 @@ class SnakesEvolution():
         
         A = computeA(N, self.Alpha, self.Beta)
         A = self.Gamma * A + eye(N)
-        igpi = inv(A) # Equation (24) in the paper (first part)
-        
+        igpi = inv(np.asarray(A)) # Equation (24) in the paper (first part)
         # gradient computation
         Grad = gradientCentered(I)
         Potential = np.sum(np.square(Grad),2)
@@ -72,15 +73,13 @@ class SnakesEvolution():
         iteration = 0
         while ((eps>9e-2) and (n <= self.MaxIteration) and (elapsedtime < self.TimeOut )):
             iteration+=1
-            #print(f"This is iteration number:{iteration}\n\n\n")
+            print(f"This is iteration number:{iteration}\n\n\n")
             
             B = balloonForce(V)
             B = smoothForces(B,self.BalloonSmoothing)
-            B = np.matrix(B)
             #print(B.shape)
             GV = interpSnake2(nabla_P, np.asarray(V))
             #print(GV.shape)
-            
             # stop the balloon force
             #print("Going through all the different shapes")
             #print(type(GV))
@@ -92,8 +91,8 @@ class SnakesEvolution():
             #print((np.sum(np.square(B),1)).shape)
             
             
-            nrmi = np.sum(np.square(GV),1)
-            nrmb = np.sum(np.square(B),1)
+            nrmi = np.sum(np.square(GV),1).reshape(-1,1)
+            nrmb = np.sum(np.square(B),1).reshape(-1,1)
 
             #print(nrmb.shape)
             #print(nrmi.shape)
@@ -117,8 +116,18 @@ class SnakesEvolution():
             #print((V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)*self.Gamma)).shape)
             
             #print((condi*np.array([1,1])).shape)
-            V1 = np.matmul(igpi,(V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)\
-                                        *self.Gamma)))
+            V1 = igpi @ (V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)\
+                                        *self.Gamma))
+            '''
+            mat_igpi = matlab.double(igpi.tolist())
+            mat_V = matlab.double(V.tolist())
+            mat_GV = matlab.double(GV.tolist())
+            mat_BC = self.BalloonCoefficient
+            mat_condi = matlab.double(condi.tolist())
+            mat_B = matlab.double(B.tolist())
+            mat_Gamma = self.Gamma
+            V1 = np.array(eng.update(mat_igpi,mat_V,mat_GV,mat_BC,mat_condi,mat_B,mat_Gamma))
+            '''
             #print("This is the shape of V1 and then V")
             #print(V1.shape)
             #print(V.shape)
@@ -138,7 +147,7 @@ class SnakesEvolution():
                     # computation of the regularization matrix
                     A = computeA(N2,self.Alpha,self.Beta)
                     A = self.Gamma * A + eye(N2)
-                    igpi = inv(A)
+                    igpi = inv(np.asarray(A))
                     # computation of the potential
                     nabla_P = gradientCentered(Potential)
                     condi = np.ones((N2,1)) == 1
@@ -149,16 +158,15 @@ class SnakesEvolution():
             if (V.shape[0] == V1.shape[0]):
                 #print(V.flatten()[np.newaxis].T.shape)
                 #print(V1.flatten().T.shape)
-                eps = np.sum(np.power((V.flatten()-V1.flatten().squeeze()),2))
-                #print(f"This is eps: {eps}")
+                eps = np.sum((V-V1)**2)
             else:
                 eps = 1e5
-            
             #print("This is the shape of V1 and then V")
             #print(V1.shape)
             #print(V.shape)
+            #print(f"This is eps: {eps}")
             V = V1
-        
+            
         elapsedtime = time.time() - t
         if (n == self.MaxIteration+1): 
             print(f"Maximum Iterations Number ({self.MaxIteration}) reached. Time(s): {elapsedtime}s. Algorithm may have not converged.")

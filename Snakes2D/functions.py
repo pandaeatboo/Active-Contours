@@ -1,5 +1,5 @@
 # Script to hold all the helper functions that will be used for the 2D Snake
-
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import RectBivariateSpline, interp2d, griddata
@@ -8,6 +8,9 @@ from scipy.sparse import spdiags
 import math
 from scipy.io import loadmat
 
+import matlab.engine
+eng = matlab.engine.start_matlab()
+#%%
 #compute the A matrix
 def computeA(n,alpha,beta):
     d1 = -2*np.ones(n)
@@ -42,46 +45,64 @@ data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\interp2 c
 G = data["nabla_P"]
 V = data["V"]
 S = data["GV"]
-    
+ 
+
 def interpSnake2(G,V): 
     
     x_range = np.arange(1,G.shape[1]+1)
     y_range = np.arange(1,G.shape[0]+1)
    
-    #[X,Y] = np.meshgrid(y_range,x_range) 
-    #vertical = griddata((Y.ravel(),X.ravel()), G[:,:,0].ravel(),(V[:,0], V[:,1]), method="linear", fill_value=np.nan)
-    #horizontal = griddata((Y.ravel(),X.ravel()), G[:,:,1].ravel(), (V[:,0], V[:,1]), method="linear", fill_value=np.nan)
+    #x_range = np.arange(1,G.shape[0]+1)
+    #y_range = np.arange(1,G.shape[1]+1)
+    
+    #[X,Y] = np.meshgrid(x_range,y_range) 
+    #vertical = griddata((X.ravel(),Y.ravel()), G[:,:,0].ravel(),(V[:,0], V[:,1]), method="linear", fill_value=np.nan)
+    #horizontal = griddata((X.ravel(),Y.ravel()), G[:,:,1].ravel(), (V[:,0], V[:,1]), method="linear", fill_value=np.nan)
+    #vertical = vertical.reshape(-1,1)
+    #horizontal = horizontal.reshape(-1,1)
     
     #vert = interp2d(x_range,y_range,G[:,:,0],kind="linear",fill_value=np.NaN)
     #vertical = np.matrix(vert(V[:,0],V[:,1]))
+    #vertical = np.diag(vertical).reshape(-1,1)# trying to see if taking diagonals work
     #horiz = interp2d(x_range,y_range,G[:,:,1],kind="linear",fill_value=np.NaN)
     #horizontal = np.matrix(horiz(V[:,0],V[:,1]))
-    #print(vertical[0,:].reshape(-1,1).shape)
-    #print(horizontal[0,:].reshape(-1,1).shape)
-    #combined = np.concatenate((horizontal[0,:].reshape(-1,1),vertical[0,:].reshape(-1,1)),axis=1)
-    #print(combined.shape)
+    #horizontal = np.diag(horizontal).reshape(-1,1)
+    
     
     ## RECT BIVARIATE SPLINE DOES NOT WORK 
     vert = RectBivariateSpline(y_range,x_range,G[:,:,0])
-    vertical = np.matrix(vert(V[:,0],V[:,1],grid=False)).T
+    vertical = vert(V[:,0],V[:,1],grid=False).reshape(-1,1)
     horiz = RectBivariateSpline(y_range,x_range,G[:,:,1])
-    horizontal = np.matrix(horiz(V[:,0],V[:,1],grid=False)).T
+    horizontal = horiz(V[:,0],V[:,1],grid=False).reshape(-1,1)
     
     #using the map_coordinates -NOT linear interpolation though, it's cubic spline 
-    #vertical = map_coordinates(G[:,:,0], [V[:,0].ravel(), V[:,1].ravel()], order=1, mode='constant')[np.newaxis]
-    #horizontal = map_coordinates(G[:,:,1], [V[:,0].ravel(), V[:,1].ravel()], order=1, mode='constant')[np.newaxis]
-    #combined = np.concatenate((vertical.T,horizontal.T),axis=1)
+    #vertical = map_coordinates(G[:,:,0], [V[:,0].ravel(), V[:,1].ravel()], order=1, mode='constant').reshape(-1,1)
+    #horizontal = map_coordinates(G[:,:,1], [V[:,0].ravel(), V[:,1].ravel()], order=1, mode='constant').reshape(-1,1)
+    #combined = np.concatenate((horizontal,vertical),axis=1)
     
     #print("This is the horizontal and vertical shape of interpSnake2")
     #print(horizontal.shape)
     #print(vertical.shape)
     #print(combined.shape)
+    #combined = np.concatenate((horizontal.reshape(-1,1),vertical.reshape(-1,1)),axis=1)
     combined = np.concatenate((horizontal,vertical),axis=1)
-    #print(type(combined))
     
-    return combined
+    return combined # only return np.matrix(combined) if it's not already a matrix
 
+
+## CURRENT WORKAROUND IS TO JUST CALL THE MATLAB FUNCTION
+'''
+def interpSnake2(G,V):
+    mat_G = matlab.double(G.tolist())
+    mat_V = matlab.double(V.tolist())
+    s = eng.interpSnake2(mat_G,mat_V,nargout=1)
+    return np.array(s)
+'''   
 # Cathy's 
+# CROSS CHECKED -- THIS IS CORRECT!
+#balloon_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\balloonForce checker data.mat")
+#B = balloon_data["B"]
+#V_balloon = balloon_data["V"]
 def balloonForce(V):
   n=np.shape(V)[0]
 
@@ -104,6 +125,7 @@ def displayImageAndSnake(I, V):
     # displays the image and the polygon the user drew
 
     # expects an image that is 2D, map to grayscale
+    plt.figure(figsize=(15,15))
     plt.imshow(np.uint8(I), cmap='gray')
     # we expect V is a polygon with first column containing x, second column containing y
     # x values of the snake: add the first coordinate to the end to close the snake
@@ -228,17 +250,28 @@ def selectPoints(I):
     return V
 
 # Cathy's
+smooth_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\smoothForce checkerdata.mat")
+f = smooth_data["B1"]
+sig = smooth_data["sb"]
+smooth_B = smooth_data["B"]
 def smoothForces(f, sig):
   n=np.shape(f)[0]
-  l2 = int(np.maximum(1,np.floor(n/2)))
-  t = [i for i in range(l2-1+1)]
-  t.extend([i for i in range(-(n-l2),-1+1)])
+  l2 = np.maximum(1,int(np.floor(n/2)))
+  t = [i for i in range(l2)]
+  t.extend([i for i in range(-(n-l2),0)])
   P = np.exp(np.divide(-1*np.power(t,2),abs(sig)+1e-6))
   P = np.divide(P, np.sum(P))
-  fc1 = np.real(np.fft.ifft( np.multiply(np.fft.fft(f[:,0][np.newaxis].T),np.fft.fft(P[:]))))
-  fc2 = np.real(np.fft.ifft( np.multiply(np.fft.fft(f[:,1][np.newaxis].T),np.fft.fft(P[:]))))
+  fc1 = np.real(np.fft.ifft( np.multiply(np.fft.fft(f[:,0].T),np.fft.fft(P[:]))))
+  fc2 = np.real(np.fft.ifft( np.multiply(np.fft.fft(f[:,1].T),np.fft.fft(P[:]))))
   fc = np.column_stack((fc1.T, fc2.T))
   return fc
+'''
+def smoothForces(f,sig):
+    mat_f = matlab.double(f.tolist())
+    mat_sig = sig
+    result = eng.smoothForces(mat_f,mat_sig,nargout=1)
+    return np.array(result)
+'''
 
 # Cathy's
 def splinesInterpolation2D(V, NbPoints):
