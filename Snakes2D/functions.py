@@ -46,7 +46,7 @@ G = data["nabla_P"]
 V = data["V"]
 S = data["GV"]
  
-
+'''
 def interpSnake2(G,V): 
     
     x_range = np.arange(1,G.shape[1]+1)
@@ -88,16 +88,16 @@ def interpSnake2(G,V):
     combined = np.concatenate((horizontal,vertical),axis=1)
     
     return combined # only return np.matrix(combined) if it's not already a matrix
-
+'''
 
 ## CURRENT WORKAROUND IS TO JUST CALL THE MATLAB FUNCTION
-'''
+
 def interpSnake2(G,V):
     mat_G = matlab.double(G.tolist())
     mat_V = matlab.double(V.tolist())
     s = eng.interpSnake2(mat_G,mat_V,nargout=1)
     return np.array(s)
-'''   
+  
 # Cathy's 
 # CROSS CHECKED -- THIS IS CORRECT!
 #balloon_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\balloonForce checker data.mat")
@@ -134,7 +134,7 @@ def displayImageAndSnake(I, V):
     # y values are similar
     yvals = np.hstack((V[:,1], V[0,1]))
     plt.axis(False)
-    plt.plot(xvals, yvals, 'k-', linewidth=2)
+    plt.plot(xvals, yvals, 'b-', linewidth=2)
 
 # Matthew's
 def gradientCentered(I):
