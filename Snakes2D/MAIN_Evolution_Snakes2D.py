@@ -32,12 +32,12 @@ def run(image_path, k=3, Alpha=1750, Beta=500, Sigma=1, Gamma=5e-5, BalloonCoeff
     displayImageAndSnake(I_init, V_final)
     plt.title("Snake Segmentation")
     
-    return 
+    return V_final
 
     
     
 
 if __name__ == "__main__":
-    run("./images/shield.png",Alpha=1750,Beta=700,Sigma=1.4,Gamma=0.0015,\
+    final_V = run("./images/shield.png",Alpha=1750,Beta=700,Sigma=1.4,Gamma=0.0015,\
                           BalloonCoefficient=-100,BalloonSmoothing=100,MaxIteration=300)
     

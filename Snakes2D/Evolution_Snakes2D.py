@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 from scipy.sparse import eye
 import cv2
 from functions import *
-import matlab.engine
-eng = matlab.engine.start_matlab()
+#import matlab.engine
+#eng = matlab.engine.start_matlab()
 
 # Instead of the I_init and V_init used in the MATLAB version. Here we just ask the 
 # user to input the original image, as well as how many subdivisions they want.
@@ -90,7 +90,6 @@ class SnakesEvolution():
             #print((np.sum(np.square(GV),1)).shape)
             #print((np.sum(np.square(B),1)).shape)
             
-            
             nrmi = np.sum(np.square(GV),1).reshape(-1,1)
             nrmb = np.sum(np.square(B),1).reshape(-1,1)
 
@@ -116,8 +115,11 @@ class SnakesEvolution():
             #print((V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)*self.Gamma)).shape)
             
             #print((condi*np.array([1,1])).shape)
-            V1 = igpi @ (V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)\
-                                        *self.Gamma))
+            #print((V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)\
+            #                            *self.Gamma)))
+
+            V1 = np.matmul(igpi, (V + (GV+self.BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)\
+                                        *self.Gamma)))
             '''
             mat_igpi = matlab.double(igpi.tolist())
             mat_V = matlab.double(V.tolist())
@@ -150,7 +152,7 @@ class SnakesEvolution():
                     igpi = inv(np.asarray(A))
                     # computation of the potential
                     nabla_P = gradientCentered(Potential)
-                    condi = np.ones((N2,1)) == 1
+                    condi = (np.ones((N2,1)) == 1).astype(int)
 
 
             # computation of the stopping criteria
@@ -177,8 +179,6 @@ class SnakesEvolution():
 
         return V 
        
-        
-        
             
         
         

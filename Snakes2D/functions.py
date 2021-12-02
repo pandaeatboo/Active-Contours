@@ -8,10 +8,16 @@ from scipy.sparse import spdiags
 import math
 from scipy.io import loadmat
 
-import matlab.engine
-eng = matlab.engine.start_matlab()
+#import matlab.engine
+#eng = matlab.engine.start_matlab()
 #%%
 #compute the A matrix
+# CROSS CHECKED THIS IS GOOD!!!!!!!!!!!!!!!
+computeA_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\computeA checker.mat")
+alpha = int(computeA_data["alpha"])
+beta = int(computeA_data["beta"])
+A = computeA_data["A"]
+N = int(computeA_data["N"])
 def computeA(n,alpha,beta):
     d1 = -2*np.ones(n)
     d2 = np.ones(n-1)
@@ -22,9 +28,13 @@ def computeA(n,alpha,beta):
     A4 = A2 @ A2
     
     return -alpha*A2 + beta*A4
-
+#%%
 
 # calculate euclidean distance between points
+# CROSS CHECKED THIS IS GOOD !!!!!!!!!!!!!!!!!!!!!!!!!
+distPoints_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\distPoints checker.mat")
+distPoints_V1 = distPoints_data["V1"]
+dv = distPoints_data["dv"]
 def distPoints(V):
     V = np.vstack([V,V[0,:]])
     
@@ -35,11 +45,8 @@ def distPoints(V):
 
 # interpolate the snake V, on the vector field G
 # have to interpret matlab's interp2 using scipy interp2d
-    
 
-np.random.seed(10)
-#V = np.random.rand(224,2)
-#G = np.random.rand(423,417,2)
+#%%
 data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\interp2 checker data.mat")
 
 G = data["nabla_P"]
@@ -91,13 +98,34 @@ def interpSnake2(G,V):
 '''
 
 ## CURRENT WORKAROUND IS TO JUST CALL THE MATLAB FUNCTION
-
+'''
 def interpSnake2(G,V):
     mat_G = matlab.double(G.tolist())
     mat_V = matlab.double(V.tolist())
     s = eng.interpSnake2(mat_G,mat_V,nargout=1)
     return np.array(s)
-  
+'''
+def interpSnake2(G,V): 
+    
+    x_range = np.arange(1,G.shape[1]+1)
+    y_range = np.arange(1,G.shape[0]+1)
+    
+    vert = interp2d(x_range,y_range,G[:,:,0],kind="linear",fill_value=np.nan)
+    vertical_values = []
+    for i in range(len(V[:,0])):
+        vertical_values.append(vert(V[i,0],V[i,1]))
+    vertical_values = np.array(vertical_values)
+
+    horiz = interp2d(x_range,y_range,G[:,:,1],kind="linear",fill_value=np.nan)
+    horizontal_values = []
+    for i in range(len(V[:,0])):
+        horizontal_values.append(horiz(V[i,0],V[i,1]))
+    horizontal_values = np.array(horizontal_values)
+
+    combined = np.concatenate((horizontal_values,vertical_values),axis=1)
+    
+    return combined # only return np.matrix(combined) if it's not already a matrix 
+
 # Cathy's 
 # CROSS CHECKED -- THIS IS CORRECT!
 #balloon_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\balloonForce checker data.mat")
@@ -136,7 +164,12 @@ def displayImageAndSnake(I, V):
     plt.axis(False)
     plt.plot(xvals, yvals, 'b-', linewidth=2)
 
+#%%
 # Matthew's
+# CROSS CHECKED THIS WORKS!!!!!!!!!!!!!!
+gradCentr_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\gradientCentred checker.mat")
+I = gradCentr_data["I"]
+gradCentr_G = gradCentr_data["Grad"]
 def gradientCentered(I):
 
   # Computes the gradient of I with a centered scheme and symmetrical boundary conditions
@@ -157,7 +190,7 @@ def gradientCentered(I):
   G[:,-1,1] = 0.5*(I[:,-1] - I[:,-2])
   
   return G
-
+#%%
 # Matthew's
 def polygonParity(V):
     
@@ -254,6 +287,7 @@ smooth_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\sm
 f = smooth_data["B1"]
 sig = smooth_data["sb"]
 smooth_B = smooth_data["B"]
+# CROSS CHECKED THIS WORKS!!!!!!!!!!!!!!!!!!!!
 def smoothForces(f, sig):
   n=np.shape(f)[0]
   l2 = np.maximum(1,int(np.floor(n/2)))
@@ -333,6 +367,11 @@ def splinesInterpolation2D(V, NbPoints):
   return PT
 
 # Cathy's 
+subdivision_data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\subdivision checker.mat")
+output = subdivision_data["V_init"]
+k = int(subdivision_data["k"])
+V0 = subdivision_data["results"]
+# CROSS CHECKED THIS WORKS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def subdivision(V0,k):
   x=V0[:,0]
   y=V0[:,1]
@@ -366,3 +405,22 @@ def subdivision(V0,k):
   V = np.column_stack((xi[:],yi[:]))
   return V
 
+#%% 
+data = loadmat(r"C:\Users\EricQ\ECE588 Project\snakes\snakes\release2D\Main update checker.mat")
+V1 =  data["V1"]
+igpi = data["igpi"]
+GV = data["GV"]
+BalloonCoefficient = data["kb"]
+Gamma = data["gamma"]
+condi = data["condi"]
+V = data["V"]
+B = data["B"]
+
+python_result = igpi @ (V + (GV+BalloonCoefficient*np.multiply(condi*np.array([1,1]),B)*Gamma))
+            
+            
+            
+            
+            
+            
+            
